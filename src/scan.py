@@ -1,5 +1,7 @@
+import os
 from dataclasses import dataclass
 from services.db import run_db_statement
+from src.services.azure_storage import get_blob_as_bytes
 
 @dataclass
 class ScanMetadata:
@@ -27,7 +29,7 @@ def get_scans_metadata_with_double_match(annotation: str) -> list[ScanMetadata]:
     - benign_mass
     """
 
-    # SQL query that will select all items from scans whose id is equal to scan id in an annotation 
+    # Create SQL query that will select all items from scans whose id is equal to scan id in an annotation 
     # whose has_{annotation} is TRUE and whose study id is at least twice in the scan table.
     query = f"""
     SELECT scan.id, scan.png_image, scan.file_name
@@ -42,7 +44,10 @@ def get_scans_metadata_with_double_match(annotation: str) -> list[ScanMetadata]:
     );
     """
 
+    # Execute the query
     scan_result = run_db_statement(query)
+
+    # Create a list of ScanMetadata objects
     scans_metadata = list(map(lambda result: ScanMetadata(result[0], result[1], result[2]), scan_result))
 
     return scans_metadata
@@ -55,7 +60,6 @@ def download_scan_png(scan_metadata: ScanMetadata) -> None:
 
     Hint: Use the `get_blob_as_bytes` function from the `services.azure_storage` module.
     """
-    
 
 
 def draw_bounding_boxes(annotation: str, scan_metadata: ScanMetadata) -> None:
@@ -73,6 +77,8 @@ def main(annotation: str) -> None:
     
     for metadata in scans_metadata:
         print(metadata)
+    
+
 
     # for scan_metadata in scans_metadata:
     #     download_scan_png(scan_metadata)
