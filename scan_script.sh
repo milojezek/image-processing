@@ -1,6 +1,6 @@
 # Print a welcome message
 echo "=== Welcome to the Scan Script ==="
-echo Please enter an annotation:
+echo Please choose an annotation:
 options=("benign_microcalsifications" "malign_microcalcifications" "malign_mass" "benign_mass")
 
 # Display menu and get user input
