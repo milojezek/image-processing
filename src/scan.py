@@ -1,7 +1,11 @@
 import os
 from dataclasses import dataclass
 from services.db import run_db_statement
-from src.services.azure_storage import get_blob_as_bytes
+from services.azure_storage import get_blob_as_bytes
+from services.azure_storage import list_containers
+from dotenv import load_dotenv
+
+load_dotenv()
 
 @dataclass
 class ScanMetadata:
@@ -61,6 +65,26 @@ def download_scan_png(scan_metadata: ScanMetadata) -> None:
     Hint: Use the `get_blob_as_bytes` function from the `services.azure_storage` module.
     """
 
+    # Define the directory where the files will be saved
+    output_dir = os.getenv("PNG_DIR")
+
+    print(output_dir)
+
+    # Check if the directory exists, create it if it doesn't
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Set the output file path
+    output_file_path = os.path.join(output_dir, scan_metadata.file_name)
+    print("file path: ", output_file_path)
+
+    # Get the blob data
+    blob_data = get_blob_as_bytes(scan_metadata.png_image, scan_metadata.file_name)
+
+    # Write the data to a file
+    with open(output_file_path, 'wb') as output_file:
+        output_file.write(blob_data)
+
 
 def draw_bounding_boxes(annotation: str, scan_metadata: ScanMetadata) -> None:
     """
@@ -77,9 +101,11 @@ def main(annotation: str) -> None:
     
     for metadata in scans_metadata:
         print(metadata)
-    
 
+    containers = list_containers()
+    for container in containers:
+        print(container)
 
     # for scan_metadata in scans_metadata:
     #     download_scan_png(scan_metadata)
-    #     draw_bounding_boxes(annotation, scan_metadata)
+    #     # draw_bounding_boxes(annotation, scan_metadata)
