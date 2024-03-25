@@ -16,11 +16,32 @@ class ScanMetadata:
     id: int
     png_image: str
     file_name: str
+    rows: float
+    columns: float
+    pixel_spacing_row: float
+    pixel_spacing_column: float
 
-    def __init__(self, id, png_image, file_name) -> None: 
+    def __init__(self, id, 
+                png_image,
+                file_name, 
+                rows,
+                columns,
+                pixel_spacing_row, 
+                pixel_spacing_column) -> None: 
         self.id = id
         self.png_image = png_image
         self.file_name = file_name
+        self.rows = rows
+        self.columns = columns
+        self.pixel_spacing_row = pixel_spacing_row
+        self.pixel_spacing_column = pixel_spacing_column
+
+    def __repr__(self) -> str:
+        return f"""
+        id: {self.id} 
+        png_image: {self.png_image}
+        file_name: {self.file_name}
+        """
 
 
 def get_scans_metadata_with_double_match(annotation: str) -> list[ScanMetadata]:
@@ -36,11 +57,11 @@ def get_scans_metadata_with_double_match(annotation: str) -> list[ScanMetadata]:
     # Create SQL query that will select all items from scans whose id is equal to scan id in an annotation 
     # whose has_{annotation} is TRUE and whose study id is at least twice in the scan table.
     query = f"""
-    SELECT scan.id, scan.png_image, scan.file_name
-    FROM mmgscans_mmgscan scan
-    JOIN mmgscans_mmgscanannotation annotation ON scan.id = annotation.mmg_scan_id
-    WHERE annotation.has_{annotation} = TRUE
-    AND scan.mmg_study_id IN (
+    SELECT s.id, s.png_image, s.file_name, s.rows, s.columns, s.pixel_spacing_row, s.pixel_spacing_column
+    FROM mmgscans_mmgscan s
+    JOIN mmgscans_mmgscanannotation a ON s.id = a.mmg_scan_id
+    WHERE a.has_{annotation} = TRUE
+    AND s.mmg_study_id IN (
         SELECT mmg_study_id
         FROM mmgscans_mmgscan
         GROUP BY mmg_study_id
@@ -52,7 +73,16 @@ def get_scans_metadata_with_double_match(annotation: str) -> list[ScanMetadata]:
     scan_result = run_db_statement(query)
 
     # Create a list of ScanMetadata objects
-    scans_metadata = list(map(lambda result: ScanMetadata(result[0], result[1], result[2]), scan_result))
+    scans_metadata = list(map(
+        lambda result: ScanMetadata(
+            id = result[0],
+            png_image = result[1],
+            file_name = result[2],
+            rows = result[3],
+            columns = result[4],
+            pixel_spacing_row = result[5],
+            pixel_spacing_column = result[6]), scan_result
+    ))
 
     return scans_metadata
 
@@ -61,8 +91,6 @@ def download_scan_png(scan_metadata: ScanMetadata) -> None:
     """
     Download the scan (in PNG format) from Azure Storage and save it to the local filesystem.
     Destination directory where the files will be saved is defined by the `PNG_DIR` environment variable.
-
-    Hint: Use the `get_blob_as_bytes` function from the `services.azure_storage` module.
     """
 
     # Define the directory where the files will be saved
